@@ -20,3 +20,10 @@ export function formatDate(date: string | Date): string {
     year: 'numeric',
   });
 }
+
+export function formatTime(date: string | Date): string {
+  return new Date(date).toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
