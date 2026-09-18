@@ -55,6 +55,57 @@ export class HostController {
     return this.hostService.getStats(req.user.id);
   }
 
+  // ===== HOST: Get Dashboard Stats =====
+  @Get('dashboard')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get host dashboard stats' })
+  async getDashboard(@Request() req) {
+    return this.hostService.getDashboard(req.user.id);
+  }
+
+  // ===== HOST: Get My Listings =====
+  @Get('listings')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiOperation({ summary: 'Get my listings (alias for /listings/host/my)' })
+  async getMyListings(
+    @Request() req,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.hostService.getMyListings(req.user.id, {
+      status,
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
+    });
+  }
+
+  // ===== HOST: Get My Bookings =====
+  @Get('bookings')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiOperation({ summary: 'Get incoming bookings (alias for /bookings/host/my)' })
+  async getMyBookings(
+    @Request() req,
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.hostService.getMyBookings(req.user.id, {
+      status,
+      page: page ? parseInt(page) : 1,
+      limit: limit ? parseInt(limit) : 20,
+    });
+  }
+
   // ===== ADMIN: Get Applications =====
   @Get('admin/applications')
   @UseGuards(JwtAuthGuard)

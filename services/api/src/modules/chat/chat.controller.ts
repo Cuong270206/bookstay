@@ -20,6 +20,13 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class ChatController {
   constructor(private chatService: ChatService) {}
 
+  // ===== Get Conversations List =====
+  @Get('conversations')
+  @ApiOperation({ summary: 'Get chat conversations list' })
+  async getConversations(@Request() req) {
+    return this.chatService.getConversations(req.user.id);
+  }
+
   // ===== Get Messages (polling) =====
   @Get(':bookingId')
   @ApiOperation({ summary: 'Get chat messages (for polling)' })
@@ -28,7 +35,8 @@ export class ChatController {
     @Param('bookingId') bookingId: string,
     @Query('since') since?: string,
   ) {
-    return this.chatService.getMessages(bookingId, req.user.id, since);
+    const messages = await this.chatService.getMessages(bookingId, req.user.id, since);
+    return { messages };
   }
 
   // ===== Send Message =====

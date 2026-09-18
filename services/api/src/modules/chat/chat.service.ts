@@ -6,6 +6,82 @@ import { SendMessageDto } from './dto/send-message.dto';
 export class ChatService {
   constructor(private prisma: PrismaService) {}
 
+  // ===== Get Conversations List =====
+  async getConversations(userId: string) {
+    // Get all bookings where user is guest or host
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        OR: [
+          { guestId: userId },
+          { listing: { host: { userId } } },
+        ],
+      },
+      include: {
+        listing: {
+          select: { id: true, title: true },
+        },
+        guest: { select: { id: true, name: true, avatar: true } },
+        listing: {
+          include: {
+            host: {
+              include: {
+                user: { select: { id: true, name: true, avatar: true } },
+              },
+            },
+          },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    // Build conversations list
+    const conversations = bookings.map((booking) => {
+      const isGuest = booking.guestId === userId;
+      const otherUser = isGuest
+        ? booking.listing.host.user
+        : booking.guest;
+
+      // Count unread messages
+      const unreadCount = this.prisma.chatMessage.count({
+        where: {
+          bookingId: booking.id,
+          senderId: { not: userId },
+          readAt: null,
+        },
+      });
+
+      return {
+        id: booking.id,
+        otherUser,
+        listingId: booking.listing.id,
+        listingTitle: booking.listing.title,
+        lastMessage: booking.messages[0]?.message || 'Chưa có tin nhắn',
+        lastMessageAt: booking.messages[0]?.createdAt || booking.createdAt,
+        unreadCount,
+      };
+    });
+
+    // Get unread counts separately
+    const conversationsWithUnread = await Promise.all(
+      conversations.map(async (conv) => ({
+        ...conv,
+        unreadCount: await this.prisma.chatMessage.count({
+          where: {
+            bookingId: conv.id,
+            senderId: { not: userId },
+            readAt: null,
+          },
+        }),
+      })),
+    );
+
+    return { data: conversationsWithUnread };
+  }
+
   // ===== Get Chat Messages =====
   async getMessages(bookingId: string, userId: string, since?: string) {
     const booking = await this.prisma.booking.findUnique({
