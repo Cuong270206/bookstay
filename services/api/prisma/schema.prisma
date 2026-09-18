@@ -1,0 +1,382 @@
+// BookStay Database Schema
+// PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum Role {
+  GUEST
+  HOST
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum HostStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  NEEDS_EDIT
+  REJECTED
+  PAUSED
+  DELETED
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  CANCELLED_50
+  CANCELLED_0
+  COMPLETED
+  REFUND_PROCESSING
+  REFUNDED
+  REFUND_FAILED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCESS
+  FAILED
+  TIMEOUT
+  REFUNDED
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  SETTLED
+  FAILED
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  phone         String?     @unique
+  passwordHash  String
+  name          String
+  role          Role       @default(GUEST)
+  status        UserStatus @default(ACTIVE)
+  avatar        String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Host
+  hostProfile   HostProfile?
+
+  // Guest relations
+  bookings      Booking[]   @relation("GuestBookings")
+  reviews       Review[]
+  chatMessages  ChatMessage[]
+
+  @@map("users")
+}
+
+model HostProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Business
+  businessName    String?
+  businessLicense String?  // URL to license
+
+  // Bank account (REQUIRED for settlement)
+  bankName        String?
+  bankAccountName String?
+  bankAccountNumber String?
+
+  // Stats
+  listingCount    Int      @default(0)
+  totalEarnings   Decimal  @default(0) @db.Decimal(12, 2)
+
+  // Host application
+  status          HostStatus @default(PENDING)
+  rejectReason    String?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  listings        Listing[]
+
+  @@map("host_profiles")
+}
+
+model Listing {
+  id            String         @id @default(uuid())
+  hostId        String
+  host          HostProfile    @relation(fields: [hostId], references: [id])
+
+  // Basic
+  title         String
+  description   String
+  address       String
+  latitude      Float?
+  longitude     Float?
+  city          String         @default("Hà Nội")
+
+  // Property
+  maxGuests     Int            @default(4)
+  bedrooms      Int            @default(1)
+  bathrooms     Int            @default(1)
+  area          Float?
+
+  // Pricing (VND)
+  basePrice     Decimal        @db.Decimal(10, 2)
+  weekendPrice  Decimal?       @db.Decimal(10, 2)
+  cleaningFee   Decimal?       @db.Decimal(10, 2)
+
+  // Amenities
+  amenities     String[]
+
+  // Images
+  images        ListingImage[]
+
+  // Status
+  status        ListingStatus  @default(DRAFT)
+
+  // Review
+  reviewNote    String?
+  reviewedAt    DateTime?
+  reviewedBy    String?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  bookings      Booking[]
+  calendarBlocks CalendarBlock[]
+
+  @@index([status, city])
+  @@index([hostId])
+  @@map("listings")
+}
+
+model ListingImage {
+  id           String   @id @default(uuid())
+  listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url          String
+  cloudinaryId String?
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@map("listing_images")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+
+  listingId     String
+  listing       Listing       @relation(fields: [listingId], references: [id])
+  guestId       String
+  guest         User          @relation("GuestBookings", fields: [guestId], references: [id])
+
+  // Dates
+  checkIn       DateTime      @db.Date
+  checkOut      DateTime      @db.Date
+  nights        Int
+
+  // Guest info (snapshot)
+  guestName     String
+  guestPhone    String
+  guestEmail    String
+  guestCount    Int
+  specialRequests String?
+
+  // Pricing (VND)
+  nightlyRate   Decimal       @db.Decimal(10, 2)
+  cleaningFee   Decimal?      @db.Decimal(10, 2)
+  subtotal      Decimal       @db.Decimal(10, 2)
+  platformFee   Decimal       @db.Decimal(10, 2)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  refundAmount  Decimal?      @db.Decimal(10, 2)
+
+  // Status
+  status        BookingStatus @default(PENDING_PAYMENT)
+
+  // Relations
+  payment       Payment?
+  settlement    Settlement?
+  chatMessages  ChatMessage[]
+  review        Review?
+
+  // Refund
+  cancelReason  String?
+  cancelledAt   DateTime?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  version       Int           @default(1)
+
+  @@index([listingId, checkIn, checkOut])
+  @@index([guestId])
+  @@index([status])
+  @@map("bookings")
+}
+
+model Payment {
+  id               String        @id @default(uuid())
+  bookingId        String        @unique
+  booking          Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // VNPay
+  vnpTransactionId String?
+  vnpOrderInfo     String?
+  vnpAmount        Int
+  vnpResponseCode  String?
+  vnpBankCode      String?
+  vnpPayDate       DateTime?
+
+  // Status
+  status           PaymentStatus @default(CREATED)
+  returnUrl        String?
+
+  // Lock (20 min)
+  lockExpiresAt    DateTime?
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  refunds          Refund[]
+
+  @@map("payments")
+}
+
+model Refund {
+  id           String   @id @default(uuid())
+  paymentId    String
+  payment      Payment  @relation(fields: [paymentId], references: [id])
+
+  amount       Decimal  @db.Decimal(10, 2)
+  reason       String
+  status       String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+
+  adminId      String?
+  processedAt  DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("refunds")
+}
+
+model Settlement {
+  id           String           @id @default(uuid())
+  bookingId    String           @unique
+  booking      Booking          @relation(fields: [bookingId], references: [id])
+
+  grossAmount  Decimal          @db.Decimal(10, 2)
+  commission   Decimal          @db.Decimal(10, 2)
+  netAmount    Decimal          @db.Decimal(10, 2)
+
+  status       SettlementStatus @default(PENDING)
+
+  vnpTxnId     String?
+  settledAt    DateTime?
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@map("settlements")
+}
+
+model CalendarBlock {
+  id         String   @id @default(uuid())
+  listingId  String
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  startDate  DateTime @db.Date
+  endDate    DateTime @db.Date
+  reason     String   // OWNER_BLOCKED, MAINTENANCE, OTHER
+  note       String?
+
+  version    Int      @default(1)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([listingId, startDate, endDate])
+  @@map("calendar_blocks")
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  bookingId  String
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+
+  senderId   String
+  sender     User     @relation(fields: [senderId], references: [id])
+
+  message    String   @db.Text
+  readAt     DateTime?
+
+  createdAt  DateTime @default(now())
+
+  @@index([bookingId, createdAt])
+  @@map("chat_messages")
+}
+
+model Review {
+  id         String    @id @default(uuid())
+  bookingId  String    @unique
+  booking    Booking   @relation(fields: [bookingId], references: [id])
+
+  reviewerId String
+  reviewer   User      @relation(fields: [reviewerId], references: [id])
+
+  rating     Int       // 1-5
+  comment    String?   @db.Text
+
+  editedAt   DateTime?
+  deletedAt  DateTime?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  flagged    Boolean   @default(false)
+  flagReason String?
+
+  @@map("reviews")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+
+  type      String    // BOOKING_CONFIRMED, PAYMENT_SUCCESS, etc.
+  title     String
+  body      String
+  data      Json?
+
+  readAt    DateTime?
+
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
