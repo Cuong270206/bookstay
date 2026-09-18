@@ -7,6 +7,11 @@ import { UsersModule } from './modules/users/users.module';
 import { ListingsModule } from './modules/listings/listings.module';
 import { ImagesModule } from './modules/images/images.module';
 import { HostModule } from './modules/host/host.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -21,6 +26,11 @@ import { HostModule } from './modules/host/host.module';
     ListingsModule,
     ImagesModule,
     HostModule,
+    BookingsModule,
+    PaymentsModule,
+    CalendarModule,
+    ChatModule,
+    ReviewsModule,
   ],
 })
 export class AppModule {}
