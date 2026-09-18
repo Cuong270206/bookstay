@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookStay — UX Spec v1.0</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h1 { background: linear-gradient(135deg, #e91e63, #9c27b0); color: white; padding: 30px; border-radius: 12px; margin-bottom: 20px; }
+  h2 { color: #e91e63; margin: 30px 0 15px; padding-bottom: 8px; border-bottom: 2px solid #f8bbd0; }
+  h3 { color: #9c27b0; margin: 20px 0 10px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-right: 5px; }
+  .badge-guest { background: #e3f2fd; color: #1565c0; }
+  .badge-host { background: #fff3e0; color: #e65100; }
+  .badge-admin { background: #f3e5f5; color: #7b1fa2; }
+  .badge-core { background: #ffebee; color: #c62828; }
+  table { width: 100%; border-collapse: collapse; margin: 15px 0; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  th { background: #9c27b0; color: white; padding: 12px; text-align: left; }
+  td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+  tr:hover { background: #fafafa; }
+  .flow-box { background: white; border-radius: 8px; padding: 20px; margin: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .mermaid { background: white; border-radius: 8px; padding: 20px; margin: 15px 0; text-align: center; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0; }
+  .stat-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .stat-card h4 { color: #9c27b0; margin-bottom: 8px; }
+  .stat-num { font-size: 28px; font-weight: bold; color: #e91e63; }
+  .flag { color: #c62828; font-weight: bold; }
+  .ok { color: #2e7d32; font-weight: bold; }
+  .info-box { background: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+  .warning-box { background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+  .danger-box { background: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; }
+  pre { background: #263238; color: #aed581; padding: 15px; border-radius: 8px; overflow-x: auto; margin: 15px 0; }
+  ul { padding-left: 25px; }
+  li { margin: 5px 0; }
+  .toc { background: white; border-radius: 8px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .toc a { color: #9c27b0; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .phase { border-left: 4px solid #e91e63; padding-left: 15px; margin: 20px 0; }
+  .screen-tag { display: inline-block; background: #9c27b0; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin: 2px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="container">
+<h1>📋 UX SPEC — BookStay v1.0</h1>
+<p><strong>App:</strong> BookStay — Marketplace Booking Homestay | <strong>Ngày:</strong> 2025-01-09 | <strong>Version:</strong> 1.0</p>
+
+<div class="info-box">
+<strong>Market:</strong> Hà Nội | <strong>Revenue:</strong> 15% hoa hồng | <strong>Payment:</strong> VNPay | <strong>Cancelation:</strong> Linh hoạt (7/3 ngày)
+</div>
+
+<h2>Table of Contents</h2>
+<div class="toc">
+<ul>
+<li><a href="#l0">Lớp 0 — Đếm (Actor × Goal Matrix)</a></li>
+<li><a href="#l1">Lớp 1 — Intent Map (Flow + Bảng Intent)</a></li>
+<li><a href="#l2">Lớp 2 — Screen Inventory + CRUD Matrix</a></li>
+<li><a href="#l2b">Lớp 2b — Surfaces</a></li>
+<li><a href="#l2c">Lớp 2c — States</a></li>
+<li><a href="#l3">Lớp 3 — Element</a></li>
+<li><a href="#l4">Lớp 4 — Acceptance Criteria</a></li>
+<li><a href="#l5">Lớp 5 — State Machine</a></li>
+</ul>
+</div>
+
+<!-- ========== LỚP 0: ĐẾM ========== -->
+<h2 id="l0">Lớp 0 — ĐẾM (Actor × Goal Matrix)</h2>
+
+<h3>0.1 Tổng quan Stakeholders</h3>
+<table>
+<tr><th>Actor</th><th>Goals (việc cần làm)</th><th>Entry Point</th></tr>
+<tr>
+<td><span class="badge badge-guest">GUEST</span> Khách thuê</td>
+<td>Tìm kiếm · Đặt phòng · Thanh toán · Chat · Review · Hủy đơn · Xem lịch sử</td>
+<td>Web / Mobile App</td>
+</tr>
+<tr>
+<td><span class="badge badge-host">HOST</span> Chủ homestay</td>
+<td>Onboarding · Tạo listing · Quản lý calendar · Nhận booking · Chat · Stats</td>
+<td>Web Dashboard</td>
+</tr>
+<tr>
+<td><span class="badge badge-admin">ADMIN</span> Quản trị</td>
+<td>Duyệt listing · Quản lý user · Xử lý khiếu nại · Báo cáo</td>
+<td>Web Dashboard</td>
+</tr>
+</table>
+
+<h3>0.2 Decision Count (số điểm quyết định)</h3>
+<table>
+<tr><th>Actor</th><th>Goal</th><th>Decisions (◇)</th></tr>
+<tr><td>Guest</td><td>Search</td><td>◇ Filter có kết quả? → Hiển thị / Empty state</td></tr>
+<tr><td>Guest</td><td>Book</td><td>◇ Ngày còn trống? · ◇ Guest info hợp lệ? · ◇ Pay thành công? · ◇ Lock timeout?</td></tr>
+<tr><td>Guest</td><td>Cancel</td><td>◇ Refund % theo ngày? (7→100%, 3→50%, &lt;3→0%) · ◇ Đã check-in chưa?</td></tr>
+<tr><td>Guest</td><td>Review</td><td>◇ Đã checkout chưa? · ◇ Còn trong deadline 14 ngày? · ◇ Đã review chưa?</td></tr>
+<tr><td>Host</td><td>Onboarding</td><td>◇ Admin duyệt → Active / Reject · ◇ Bank account đủ chưa?</td></tr>
+<tr><td>Host</td><td>Listing</td><td>◇ Listing pending review · ◇ Listing approved/rejected · ◇ Có booking active?</td></tr>
+<tr><td>Host</td><td>Calendar</td><td>◇ Ngày đã block bởi booking? · ◇ 2 người cùng edit? · ◇ Optimistic lock fail?</td></tr>
+<tr><td>Host</td><td>Booking Request</td><td>◇ Accept / Decline (CHỈ khi PENDING_PAYMENT)</td></tr>
+<tr><td>Host</td><td>Settlement</td><td>◇ Bank account valid? · ◇ Payout fail → retry?</td></tr>
+<tr><td>Admin</td><td>Review Listing</td><td>◇ Approve / Reject / Request edit</td></tr>
+<tr><td>Admin</td><td>Refund</td><td>◇ Approve refund? · ◇ Đã settle chưa? · ◇ Refund từ đâu?</td></tr>
+<tr><td>Admin</td><td>Suspend User</td><td>◇ User có booking active? · ◇ Suspend vs Delete?</td></tr>
+</table>
+
+<h3>0.3 Entity Taxonomy</h3>
+<div class="stat-grid">
+<div class="stat-card">
+<h4>Entities (6)</h4>
+<ul>
+<li>User (guest/host)</li>
+<li>Homestay (listing)</li>
+<li>Booking</li>
+<li>Review</li>
+<li>ChatMessage</li>
+<li>CalendarBlock</li>
+</ul>
+</div>
+<div class="stat-card">
+<h4>CRUD Matrix</h4>
+<table style="background:transparent">
+<tr><th>Entity</th><th>Create</th><th>Read</th><th>Update</th><th>Delete</th></tr>
+<tr><td>User</td><td>Register</td><td>Profile</td><td>Profile</td><td>Deactivate</td></tr>
+<tr><td>Homestay</td><td>Host tạo</td><td>All</td><td>Host</td><td>Host (soft)</td></tr>
+<tr><td>Booking</td><td>Guest tạo</td><td>Guest/Host</td><td>Cancel</td><td>—</td></tr>
+<tr><td>Review</td><td>Guest tạo</td><td>All</td><td>Guest</td><td>—</td></tr>
+<tr><td>ChatMessage</td><td>Guest/Host</td><td>Guest/Host</td><td>—</td><td>—</td></tr>
+<tr><td>CalendarBlock</td><td>Host</td><td>Host</td><td>Host</td><td>Host</td></tr>
+</table>
+</div>
+<div class="stat-card">
+<h4>Số lượng ước tính</h4>
+<div class="stat-num">~12</div>
+<p>Flows chính</p>
+<div class="stat-num">~24</div>
+<p>Màn hình</p>
+<div class="stat-num">~35</div>
+<p>Surfaces</p>
+</div>
+</div>
+
+<!-- ========== LỚP 1: FLOW + INTENT MAP ========== -->
+<h2 id="l1">Lớp 1 — INTENT MAP (Flow + Bảng Intent)</h2>
+
+<h3>1.1 Guest Flow (Mermaid)</h3>
+<div class="mermaid">
+graph TD
+    START([👤 Guest]) --> AUTH{Đăng nhập?}
+    AUTH -->|Chưa| REG[📝 Register]
+    AUTH -->|Rồi| SEARCH[🔍 Search]
+    REG --> SEARCH
+    
+    SEARCH --> FILTER[🎛️ Filter]
+    FILTER --> LISTING[🏠 Listing Grid]
+    LISTING --> DETAIL[📄 Chi tiết Homestay]
+    DETAIL --> CAL[📅 Check Calendar]
+    CAL --> BOOKING{Đặt phòng?}
+    BOOKING -->|Có| INFO[Nhập thông tin]
+    BOOKING -->|Chat trước| CHAT_G[💬 Chat Host]
+    CHAT_G --> INFO
+    INFO --> PAY[💳 Thanh toán VNPay]
+    PAY --> WAIT{Chờ callback?}
+    WAIT -->|Thành công| CONFIRM[✅ Xác nhận]
+    WAIT -->|Thất bại| PAY_ERR[X ❌ Thanh toán thất bại]
+    PAY_ERR --> PAY
+    CONFIRM --> CHAT_G2[💬 Chat Host]
+    CONFIRM --> HISTORY[📋 Lịch sử đặt phòng]
+    HISTORY --> STAY[🏠 Stay]
+    STAY --> REVIEW[⭐ Review & Rating]
+    HISTORY --> CANCEL{Hủy?}
+    CANCEL -->|7+ ngày| REFUND100[💰 Hoàn 100%]
+    CANCEL -->|3-7 ngày| REFUND50[💰 Hoàn 50%]
+    CANCEL -->|<3 ngày| NO_REFUND[❌ Không hoàn]
+</div>
+
+<h3>1.2 Host Flow (Mermaid)</h3>
+<div class="mermaid">
+graph TD
+    START([🏠 Host]) --> APPLY[📤 Apply Host]
+    APPLY --> PENDING{Admin duyệt?}
+    PENDING -->|Đang chờ| WAIT_HOST[⏳ Chờ duyệt...]
+    WAIT_HOST -->|Approved| CREATE_L[➕ Tạo Listing]
+    WAIT_HOST -->|Rejected| REJECT[❌ Từ chối]
+    PENDING -->|Approved| DASHBOARD[📊 Host Dashboard]
+    CREATE_L --> DASHBOARD
+    DASHBOARD --> CAL_HOST[📅 Calendar]
+    CAL_HOST --> BLOCK[🚫 Block ngày]
+    DASHBOARD --> BOOK_REQ{Booking Request?}
+    BOOK_REQ -->|Có| ACCEPT[✅ Accept]
+    BOOK_REQ -->|Có| DECLINE[❌ Decline]
+    BOOK_REQ -->|Có| CHAT_H[💬 Chat Guest]
+    ACCEPT --> PAID[Nhận thanh toán]
+    DECLINE --> REFUND_H[💰 Refund Guest]
+    PAID --> STATS[📈 Stats Dashboard]
+    STATS --> REPORT[Xem báo cáo]
+</div>
+
+<h3>1.3 Admin Flow (Mermaid)</h3>
+<div class="mermaid">
+graph TD
+    START([⚙️ Admin]) --> ADMIN_DASH[📊 Admin Dashboard]
+    ADMIN_DASH --> LISTINGS[🏠 Duyệt Listings]
+    ADMIN_DASH --> USERS[👥 Quản lý Users]
+    ADMIN_DASH --> COMPLAINTS[📋 Xử lý khiếu nại]
+    ADMIN_DASH --> REPORTS[📈 Báo cáo hệ thống]
+    LISTINGS -->|Pending| APPROVE[✅ Approve]
+    LISTINGS -->|Pending| REJECT_A[❌ Reject]
+    LISTINGS -->|Pending| EDIT_REQ[✏️ Yêu cầu sửa]
+    COMPLAINTS --> REFUND_A[💰 Xử lý Refund]
+    REPORTS --> REVENUE[💵 Doanh thu platform]
+</div>
+
+<h3>1.4 Intent Table (Khoảnh khắc · Intent · Đáp ứng · Nỗi nghi · Surface)</h3>
+<table>
+<tr>
+<th>Khoảnh khắc</th>
+<th>Intent (muốn gì)</th>
+<th>Đáp ứng</th>
+<th>Nỗi nghi</th>
+<th>Surface</th>
+</tr>
+<tr>
+<td>Search lần đầu</td>
+<td>Tìm homestay phù hợp ngân sách & ngày</td>
+<td>Grid kết quả có filter, giá, rating</td>
+<td>"Có còn phòng không?"</td>
+<td>Page</td>
+</tr>
+<tr>
+<td>Xem chi tiết</td>
+<td>Xem hình ảnh, tiện nghi, vị trí, calendar</td>
+<td>Gallery, map, amenities list, date picker</td>
+<td>"Có đúng như ảnh không?"</td>
+<td>Page</td>
+</tr>
+<tr>
+<td>Đặt phòng</td>
+<td>Chọn ngày, nhập info, thanh toán nhanh</td>
+<td>Form đặt phòng → VNPay → confirmation</td>
+<td>"Thanh toán có an toàn không?"</td>
+<td>Modal (form) → redirect (payment)</td>
+</tr>
+<tr>
+<td>Chờ thanh toán</td>
+<td>Biết kết quả thanh toán</td>
+<td>Spinner → success/fail banner</td>
+<td>"Đã thanh toán chưa? Reload có mất tiền không?"</td>
+<td>Toast + Banner</td>
+</tr>
+<tr>
+<td>Sau khi đặt</td>
+<td>Liên hệ host, hỏi gì đó</td>
+<td>Chat thread với host</td>
+<td>"Host có nhận được tin chưa?"</td>
+<td>Page / Drawer</td>
+</tr>
+<tr>
+<td>Hủy đơn</td>
+<td>Hủy, muốn biết được hoàn bao nhiêu</td>
+<td>Confirmation modal + refund amount shown</td>
+<td>"Mất bao nhiêu tiền?"</td>
+<td>Modal (xác nhận nguy hiểm)</td>
+</tr>
+<tr>
+<td>Checkout xong</td>
+<td>Đánh giá homestay</td>
+<td>Star rating + text review form</td>
+<td>"Review có công bằng?"</td>
+<td>Modal</td>
+</tr>
+<tr>
+<td>Host nhận request</td>
+<td>Accept/Decline booking nhanh</td>
+<td>Action buttons trên booking card</td>
+<td>"Có bị overbooking không?"</td>
+<td>Toast + Page</td>
+</tr>
+<tr>
+<td>Block calendar</td>
+<td>Block ngày không cho thuê</td>
+<td>FullCalendar UI với drag-to-select</td>
+<td>"Ngày đã có booking có bị ghi đè không?"</td>
+<td>Page (FullCalendar)</td>
+</tr>
+<tr>
+<td>Admin duyệt listing</td>
+<td>Duyệt/từ chối với lý do</td>
+<td>Approve/Reject buttons + reason input</td>
+<td>"Host có gian lận ảnh không?"</td>
+<td>Page (Admin Dashboard)</td>
+</tr>
+</table>
+
+<!-- ========== LỚP 2: SCREEN INVENTORY ========== -->
+<h2 id="l2">Lớp 2 — SCREEN INVENTORY + CRUD MATRIX</h2>
+
+<h3>2.1 Guest Screens</h3>
+<table>
+<tr><th>Screen</th><th>Route</th><th>Mô tả</th><th>CRUD</th></tr>
+<tr><td><span class="screen-tag">G1</span> Home/Search</td><td><code>/</code></td><td>Search bar + filter + listing grid</td><td>R</td></tr>
+<tr><td><span class="screen-tag">G2</span> Listing Detail</td><td><code>/homestay/:id</code></td><td>Gallery, desc, amenities, map, calendar, book CTA</td><td>R</td></tr>
+<tr><td><span class="screen-tag">G3</span> Booking Form</td><td><code>/homestay/:id/book</code></td><td>Date picker, guest info, price summary</td><td>C</td></tr>
+<tr><td><span class="screen-tag">G4</span> Payment</td><td><code>/booking/:id/pay</code></td><td>VNPay redirect page</td><td>U</td></tr>
+<tr><td><span class="screen-tag">G5</span> Booking Confirmation</td><td><code>/booking/:id/success</code></td><td>Success banner, booking details</td><td>R</td></tr>
+<tr><td><span class="screen-tag">G6</span> My Bookings</td><td><code>/bookings</code></td><td>List of all bookings with status filter</td><td>R</td></tr>
+<tr><td><span class="screen-tag">G7</span> Booking Detail</td><td><code>/booking/:id</code></td><td>Booking info, cancel button, chat</td><td>R/U</td></tr>
+<tr><td><span class="screen-tag">G8</span> Chat</td><td><code>/chat/:bookingId</code></td><td>Message thread with host</td><td>C/R</td></tr>
+<tr><td><span class="screen-tag">G9</span> Review Form</td><td><code>/booking/:id/review</code></td><td>Star rating + text</td><td>C</td></tr>
+<tr><td><span class="screen-tag">G10</span> Auth Pages</td><td><code>/login</code>, <code>/register</code></td><td>Login / Register forms</td><td>C</td></tr>
+<tr><td><span class="screen-tag">G11</span> Profile</td><td><code>/profile</code></td><td>User profile, edit info</td><td>R/U</td></tr>
+</table>
+
+<h3>2.2 Host Screens</h3>
+<table>
+<tr><th>Screen</th><th>Route</th><th>Mô tả</th><th>CRUD</th></tr>
+<tr><td><span class="screen-tag">H1</span> Host Application</td><td><code>/host/apply</code></td><td>Form đăng ký host (pending admin)</td><td>C</td></tr>
+<tr><td><span class="screen-tag">H2</span> Host Dashboard</td><td><code>/host</code></td><td>Stats overview, recent bookings, earnings</td><td>R</td></tr>
+<tr><td><span class="screen-tag">H3</span> My Listings</td><td><code>/host/listings</code></td><td>List of host's homestays</td><td>R/U/D</td></tr>
+<tr><td><span class="screen-tag">H4</span> Create/Edit Listing</td><td><code>/host/listing/new</code>, <code>/host/listing/:id/edit</code></td><td>Multi-step form: info → photos → pricing → amenities</td><td>C/U</td></tr>
+<tr><td><span class="screen-tag">H5</span> Calendar Management</td><td><code>/host/calendar/:listingId</code></td><td>FullCalendar with bookings + block dates</td><td>R/U</td></tr>
+<tr><td><span class="screen-tag">H6</span> Booking Requests</td><td><code>/host/bookings</code></td><td>Incoming bookings, accept/decline</td><td>R/U</td></tr>
+<tr><td><span class="screen-tag">H7</span> Host Chat</td><td><code>/host/chat/:bookingId</code></td><td>Chat với guest</td><td>C/R</td></tr>
+<tr><td><span class="screen-tag">H8</span> Earnings</td><td><code>/host/earnings</code></td><td>Revenue chart, payout history</td><td>R</td></tr>
+<tr><td><span class="screen-tag">H9</span> Host Profile</td><td><code>/host/profile</code></td><td>Host info, bank account for payout</td><td>R/U</td></tr>
+</table>
+
+<h3>2.3 Admin Screens</h3>
+<table>
+<tr><th>Screen</th><th>Route</th><th>Mô tả</th><th>CRUD</th></tr>
+<tr><td><span class="screen-tag">A1</span> Admin Dashboard</td><td><code>/admin</code></td><td>Stats overview, pending items count</td><td>R</td></tr>
+<tr><td><span class="screen-tag">A2</span> Listings Queue</td><td><code>/admin/listings</code></td><td>Pending/approved/rejected listings</td><td>R/U</td></tr>
+<tr><td><span class="screen-tag">A3</span> Users</td><td><code>/admin/users</code></td><td>Guest + Host list, search</td><td>R/U</td></tr>
+<tr><td><span class="screen-tag">A4</span> Bookings</td><td><code>/admin/bookings</code></td><td>All bookings, filter by status</td><td>R</td></tr>
+<tr><td><span class="screen-tag">A5</span> Complaints</td><td><code>/admin/complaints</code></td><td>Handle disputes, approve refunds</td><td>R/U</td></tr>
+<tr><td><span class="screen-tag">A6</span> Reports</td><td><code>/admin/reports</code></td><td>Revenue, GMV, commission, user stats</td><td>R</td></tr>
+<tr><td><span class="screen-tag">A7</span> Admin Login</td><td><code>/admin/login</code></td><td>Separate admin auth</td><td>C</td></tr>
+</table>
+
+<!-- ========== LỚP 2b: SURFACES ========== -->
+<h2 id="l2b">Lớp 2b — SURFACES</h2>
+<table>
+<tr><th>Surface</th><th>Khi nào dùng</th><th>Trong app này</th></tr>
+<tr><td><strong>Modal (chặn)</strong></td><td>Xác nhận nguy hiểm (hủy, delete)</td><td>Confirm cancel booking, confirm decline</td></tr>
+<tr><td><strong>Modal (form)</strong></td><td>Nhập liệu ngắn không rời page</td><td>Review form, filter dialog mobile</td></tr>
+<tr><td><strong>Drawer (slide-in)</strong></td><td>Chi tiết phụ mà giữ context chính</td><td>Chat messages, booking quick view</td></tr>
+<tr><td><strong>Toast</strong></td><td>Thông báo kết quả nhanh</td><td>"Booking accepted", "Payment failed"</td></tr>
+<tr><td><strong>Banner</strong></td><td>Thông báo quan trọng, ở lại cho đến khi dismiss</td><td>"Payment pending", "Listing pending review"</td></tr>
+<tr><td><strong>Bottom Sheet (mobile)</strong></td><td>Filter, sort trên mobile</td><td>Filter homestay results</td></tr>
+<tr><td><strong>Tooltip</strong></td><td>Giải thích icon, helper text</td><td>Info icon near commission %</td></tr>
+<tr><td><strong>Spinner</strong></td><td>Loading state cho action</td><td>Submit form, load listings</td></tr>
+</table>
+
+<!-- ========== LỚP 2c: STATES ========== -->
+<h2 id="l2c">Lớp 2c — STATES (mỗi màn × N states)</h2>
+<table>
+<tr><th>Screen</th><th>States</th></tr>
+<tr><td>G1 Home/Search</td><td>Empty (no query) · Loading · Results · No Results · Error · Offline</td></tr>
+<tr><td>G2 Listing Detail</td><td>Loading · Loaded · Calendar loading · Error · Listing not found</td></tr>
+<tr><td>G3 Booking Form</td><td>Form ready · Date selected · Submitting · Validation error · Date unavailable</td></tr>
+<tr><td>G4 Payment</td><td>Redirecting · Pending (awaiting callback) · Success · Failed · Timeout</td></tr>
+<tr><td>G5 Confirmation</td><td>Success · Failed (fallback from callback miss)</td></tr>
+<tr><td>G6 My Bookings</td><td>Empty · Loading · Loaded · Filter active · Error</td></tr>
+<tr><td>G8 Chat</td><td>Empty · Loading · Messages loaded · Sending · Send error</td></tr>
+<tr><td>H1 Host Application</td><td>Form · Submitting · Submitted (pending) · Rejected</td></tr>
+<tr><td>H4 Create Listing</td><td>Step 1-4 · Submitting · Submitted for review · Edit mode</td></tr>
+<tr><td>H5 Calendar</td><td>Loading · Loaded · Selecting range · Saving block · Block conflict</td></tr>
+<tr><td>H6 Booking Requests</td><td>Empty · Loading · Has requests · Accepting · Declining · Conflict</td></tr>
+<tr><td>A2 Listings Queue</td><td>Loading · Pending list · Approving · Rejecting · Empty queue</td></tr>
+<tr><td>A5 Complaints</td><td>Loading · Complaint detail · Processing refund · Resolved</td></tr>
+</table>
+
+<!-- ========== LỚP 3: ELEMENT ========== -->
+<h2 id="l3">Lớp 3 — ELEMENT (key interactions)</h2>
+
+<h3>3.1 Search & Filter (G1)</h3>
+<table>
+<tr><th>Element</th><th>Type</th><th>Behavior</th></tr>
+<tr><td>Search bar</td><td>Input + button</td><td>Enter hoặc click icon → navigate to search results</td></tr>
+<tr><td>Date picker</td><td>DateRangePicker</td><td>Select check-in/check-out, min 1 night, max 30 nights</td></tr>
+<tr><td>Guest count</td><td>Stepper (+/-)</td><td>Min 1, max property max_guests</td></tr>
+<tr><td>Price filter</td><td>Range slider</td><td>Min/max input + slider, update results on change</td></tr>
+<tr><td>Amenities filter</td><td>Checkbox group</td><td>WiFi, Parking, Pool, Kitchen, AC, etc.</td></tr>
+<tr><td>Listing card</td><td>Card component</td><td>Click → navigate to detail. Heart icon → wishlist</td></tr>
+</table>
+
+<h3>3.2 Booking Flow (G3-G5)</h3>
+<table>
+<tr><th>Element</th><th>Type</th><th>Enable / Disable / Hidden</th></tr>
+<tr><td>Check-in date</td><td>DatePicker</td><td>Disabled past dates, today onwards</td></tr>
+<tr><td>Check-out date</td><td>DatePicker</td><td>Disabled ≤ check-in, max check-in + 30</td></tr>
+<tr><td>Guest name</td><td>Input text</td><td>Required, min 2 chars</td></tr>
+<tr><td>Guest phone</td><td>Input tel</td><td>Required, VN phone format</td></tr>
+<tr><td>Guest email</td><td>Input email</td><td>Required, valid email format</td></tr>
+<tr><td>Special requests</td><td>Textarea</td><td>Optional, max 500 chars</td></tr>
+<tr><td>Price summary</td><td>Read-only</td><td>Nightly rate × nights + fees - discount = total</td></tr>
+<tr><td>Book Now CTA</td><td>Button primary</td><td>Disabled if dates invalid or info incomplete → VNPay redirect</td></tr>
+<tr><td>VNPay redirect</td><td>Form auto-submit</td><td>POST to VNPay with booking_id, amount, return_url</td></tr>
+<tr><td>Payment status banner</td><td>Banner</td><td>Green: success, Red: failed, Yellow: pending (polling)</td></tr>
+</table>
+
+<h3>3.3 Calendar (H5 - FullCalendar)</h3>
+<table>
+<tr><th>Element</th><th>Behavior</th></tr>
+<tr><td>Month view (default)</td><td>Click date → start range, click second → end range</td></tr>
+<tr><td>Block button</td><td>After select range → modal to name block (Owner blocked / Maintenance / Other)</td></tr>
+<tr><td>Booking events</td><td>Read-only, show guest name + check-in/check-out</td></tr>
+<tr><td>Block events</td><td>Draggable to reschedule, click → edit/delete</td></tr>
+<tr><td>Conflict warning</td><td>Red overlay if trying to block dates with existing booking</td></tr>
+</table>
+
+<!-- ========== LỚP 4: ACCEPTANCE CRITERIA ========== -->
+<h2 id="l4">Lớp 4 — ACCEPTANCE CRITERIA (Given-When-Then)</h2>
+
+<div class="phase">
+<h3>4.1 Booking Flow</h3>
+<pre>◇ DECISION: Guest chọn ngày không trống
+Happy: Guest chọn 2 đêm cuối tuần → hiện giá = base × nights × 1.2 (weekend rate)
+Unhappy: Guest chọn ngày đã booked → hiện toast "Ngày này không trống"
+
+◇ DECISION: Thanh toán VNPay thành công
+Happy: VNPay return?vnp_ResponseCode=00 → Booking status = CONFIRMED → redirect /success
+Unhappy: VNPay return?vnp_ResponseCode≠00 → Booking status = PAYMENT_FAILED → retry option
+
+◇ DECISION: Booking tạo → calendar bị block ngay
+Happy: Booking confirmed → Calendar slot marked as booked → Host thấy ngay
+Unhappy: 2 guest đặt cùng slot → second guest → show "Ngày không trống"
+
+◇ DECISION: VNPay timeout (15 phút không callback)
+Given: Guest redirect sang VNPay, đóng tab trước callback
+When: Cron 5 phút kiểm tra
+Then: PENDING_PAYMENT > 15 phút → auto cancel booking → slot unlock
+
+◇ DECISION: Lock hết 20 phút mà chưa thanh toán
+Given: Guest chọn date → lock 20 phút bắt đầu
+When: Guest không thanh toán trong 20 phút
+Then: Slot unlock → guest phải chọn lại date
+
+◇ DECISION: Cancel trước 7 ngày
+Given: Booking confirmed, check-in trong 10 ngày
+When: Guest click Cancel → confirm modal hiện "Hoàn 100%: 2,000,000 VND"
+Then: Booking status = CANCELLED, refund = 100%, guest notified
+
+◇ DECISION: Cancel 3-7 ngày
+Given: Booking confirmed, check-in trong 5 ngày
+When: Guest click Cancel
+Then: Modal hiện "Hoàn 50%: 1,000,000 VND" → confirm → status = CANCELLED
+
+◇ DECISION: Cancel < 3 ngày
+Given: Booking confirmed, check-in trong 2 ngày
+When: Guest click Cancel
+Then: Modal hiện "Không hoàn tiền" → confirm → status = CANCELLED, no refund
+
+◇ DECISION: Guest đã check-in, muốn hủy sớm
+Given: Guest đã check-in Jan 10, dự định ở 5 đêm
+When: Guest muốn hủy Jan 12 vì "homestay không như ảnh"
+Then: 0% refund (sau check-in = no refund). Host confirm early checkout → COMPLETED
+→ Guest vẫn ở 2 đêm → không refund
+
+◇ DECISION: Checkout — auto hay manual
+Given: Booking check-out Jan 15 12:00
+When: 12:00 + 30 phút grace period pass
+Then: Booking auto COMPLETED → trigger review notification + settlement cron</pre>
+</div>
+
+<div class="phase">
+<h3>4.2 Host Listing Creation</h3>
+<pre>◇ DECISION: Listing mới tạo
+Happy: Host submit → status = PENDING_REVIEW → redirect to dashboard với banner "Đang chờ duyệt trong 24h"
+Unhappy: Admin reject → status = REJECTED → reason shown → host edit & resubmit
+
+◇ DECISION: Admin approve listing
+Happy: Admin click Approve → status = PUBLISHED → visible to guests
+Unhappy: Admin request edit → status = NEEDS_EDIT → host sees feedback → resubmit
+
+◇ DECISION: Calendar conflict khi tạo booking
+Given: Host đã block Jan 5-10 "Maintenance"
+When: Guest đặt Jan 7-9
+Then: Hiện toast "Ngày không trống" → guest chọn ngày khác
+
+◇ DECISION: Host cố xóa listing có booking ACTIVE
+Given: Listing có booking CONFIRMED Jan 20-25
+When: Host click Delete
+Then: Error modal "Không thể xóa: đang có booking active. Vui lòng chờ sau ngày 25/01"
+
+◇ DECISION: 2 host cùng edit calendar
+Given: Host A và Host B cùng mở calendar
+When: Host A block Jan 10-15, Host B block Jan 12-18
+Then: Second save → optimistic lock fail → "Calendar đang được chỉnh sửa bởi người khác. Refresh để xem thay đổi"</pre>
+</div>
+
+<div class="phase">
+<h3>4.3 Chat</h3>
+<pre>◇ DECISION: Guest gửi tin nhắn
+Given: Guest ở trong booking đã confirmed
+When: Guest type + send
+Then: Message lưu DB → polling 5s → both sides thấy message
+
+◇ DECISION: Host offline → guest gửi message
+Given: Host offline (last_seen > 5 min)
+When: Guest gửi message
+Then: Message vẫn lưu → host thấy khi online → guest thấy "Đã gửi"
+
+◇ DECISION: Guest gửi message sau booking CANCELLED
+Given: Booking cancelled
+When: Guest mở chat
+Then: Chat read-only, hiện "Booking đã hủy"</pre>
+</div>
+
+<div class="phase">
+<h3>4.4 Payment Settlement</h3>
+<pre>◇ DECISION: Booking completed → settlement cho host
+Given: Check-out date passed → booking COMPLETED
+When: System cron chạy daily
+Then: Tính: total - (total × 15%) = host payout → initiate VNPay settlement
+→ Nếu host chưa có bank account → settlement FAIL → retry 3 lần → escalate Admin
+
+◇ DECISION: Refund sau settlement
+Given: Guest cancel, check-out passed, settlement đã chạy
+When: Admin approve refund request
+Then: Trừ vào settlement kỳ tiếp theo hoặc yêu cầu host chuyển lại
+
+◇ DECISION: Host chưa complete bank account
+Given: Host APPROVED nhưng chưa thêm bank account
+When: Guest đặt homestay của host
+Then: Booking vẫn được tạo → nhưng host nhận notification "Vui lòng thêm bank account để nhận thanh toán"
+→ Settlement cron: skip nếu bank account invalid</pre>
+</div>
+
+<div class="phase">
+<h3>4.5 Review</h3>
+<pre>◇ DECISION: Guest không review sau checkout
+Given: Booking COMPLETED Jan 15, guest không review
+When: 24h sau checkout
+Then: Gửi email/SMS reminder "Bạn có đánh giá chưa hoàn thành"
+→ 14 ngày sau checkout: review form đóng → không review được nữa
+
+◇ DECISION: Guest edit review
+Given: Guest đã submit review
+When: Trong vòng 48h
+Then: Guest có thể edit review → cập nhật rating + text
+
+◇ DECISION: Host flag review
+Given: Host thấy review không đúng sự thật
+When: Host click "Report" → nhập lý do
+Then: Admin nhận complaint → review tạm ẩn → Admin decide remove/keep</pre>
+</div>
+
+<div class="phase">
+<h3>4.6 Admin Actions</h3>
+<pre>◇ DECISION: Admin suspend host có booking active
+Given: Host có booking CONFIRMED Jan 20-25
+When: Admin click Suspend Host
+Then: Host suspended → listing ẩn search → booking Jan 20-25 vẫn hoàn tất
+→ Host không nhận booking mới → sau Jan 25 → host có thể reactivate
+
+◇ DECISION: Admin delete user (soft delete)
+Given: Admin click Delete User
+When: User đang có booking
+Then: Soft delete → user marked SUSPENDED → booking history giữ nguyên
+→ User không đăng nhập được → Admin có thể reactivate</pre>
+</div>
+
+<!-- ========== LỚP 5: STATE MACHINE ========== -->
+<h2 id="l5">Lớp 5 — STATE MACHINE</h2>
+
+<h3>5.1 Booking State Machine</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING_PAYMENT: Guest submit booking
+    PENDING_PAYMENT --> CONFIRMED: VNPay callback success
+    PENDING_PAYMENT --> PAYMENT_FAILED: VNPay timeout/fail
+    PAYMENT_FAILED --> PENDING_PAYMENT: Guest retry
+    PAYMENT_FAILED --> CANCELLED: 15 min timeout → auto cancel
+    CONFIRMED --> CONFIRMED: Auto-accept (no host action needed)
+
+    %% Cancel flow — trước check-in
+    CONFIRMED --> CANCELLED: Guest cancel (7+ days → 100%)
+    CONFIRMED --> CANCELLED_50: Guest cancel (3-7 days → 50%)
+    CONFIRMED --> CANCELLED_0: Guest cancel (<3 days → 0%)
+
+    %% Cancel flow — sau check-in
+    CONFIRMED --> EARLY_CHECKOUT: Guest leave early (0% refund)
+    CONFIRMED --> CANCELLED_0: Guest no-show
+
+    %% Checkout
+    CONFIRMED --> COMPLETED: Checkout (auto: 12:00 + 30min grace)
+    EARLY_CHECKOUT --> COMPLETED: Host confirm early leave
+
+    %% Refund
+    CANCELLED --> REFUND_PROCESSING: Init 100% refund
+    CANCELLED_50 --> REFUND_PROCESSING: Init 50% refund
+    CANCELLED_0 --> [*]
+    REFUND_PROCESSING --> REFUNDED: Gateway confirms
+    REFUND_PROCESSING --> REFUND_FAILED: Gateway fail
+    REFUND_FAILED --> REFUND_PROCESSING: Retry 3x
+    REFUND_FAILED --> ESCALATE: After 7 days → Admin
+
+    %% Settlement (sau khi guest checkout)
+    COMPLETED --> SETTLEMENT_PENDING: Cron daily
+    SETTLEMENT_PENDING --> SETTLED: Host receives payout
+    SETTLEMENT_PENDING --> SETTLEMENT_FAIL: No bank account
+    SETTLEMENT_FAIL --> RETRY: Retry 3x in 3 days
+    RETRY --> SETTLED: Bank OK
+    RETRY --> ESCALATE: 7 days fail → Admin
+
+    COMPLETED --> [*]
+</div>
+
+<h3>5.2 Listing State Machine</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> DRAFT: Host create
+    DRAFT --> PENDING_REVIEW: Host submit
+    PENDING_REVIEW --> PUBLISHED: Admin approve
+    PENDING_REVIEW --> REJECTED: Admin reject
+    PENDING_REVIEW --> NEEDS_EDIT: Admin request changes
+    REJECTED --> PENDING_REVIEW: Host edit & resubmit
+    NEEDS_EDIT --> PENDING_REVIEW: Host update & resubmit
+    PUBLISHED --> PAUSED: Host pause
+    PUBLISHED --> DELETED: Host delete
+    PAUSED --> PUBLISHED: Host resume
+    DELETED --> [*]
+</div>
+
+<h3>5.3 Payment State Machine</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> CREATED: Backend create payment
+    CREATED --> PENDING: Redirect to VNPay
+    PENDING --> SUCCESS: VNPay vnp_ResponseCode = 00
+    PENDING --> FAILED: VNPay vnp_ResponseCode ≠ 00
+    PENDING --> TIMEOUT: 15 min no callback
+    SUCCESS --> SETTLED: Cron job (after check-out)
+    SUCCESS --> REFUNDED: Admin approve cancel refund
+    FAILED --> PENDING: Guest retry
+    TIMEOUT --> CANCELLED: Auto cancel booking
+</div>
+
+<h3>5.4 Host Application State Machine</h3>
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING: Host submit application
+    PENDING --> APPROVED: Admin approve
+    PENDING --> REJECTED: Admin reject
+    REJECTED --> PENDING: Host resubmit with changes
+    APPROVED --> ACTIVE: Host complete profile
+    ACTIVE --> SUSPENDED: Admin suspend
+    SUSPENDED --> ACTIVE: Admin reinstate
+</div>
+
+<!-- ========== RED FLAGS + FIXES ========== -->
+<h2>🚩 RED FLAGS (Challenger Review — Đã fix)</h2>
+
+<div class="danger-box">
+<strong>1. VNPay Callback Race Condition</strong> [FIXED]
+<ul>
+<li>Lock duration = <strong>20 phút</strong> (≥ VNPay timeout)</li>
+<li>Polling /booking/:id/status mỗi 3s sau redirect, stop khi có callback HOẶC timeout 15 phút</li>
+<li>Idempotency key trên VNPay request — retry không double charge</li>
+<li>Cron backup: mỗi 5 phút check PENDING_PAYMENT > 15 phút → auto cancel</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>2. Calendar Overbooking</strong> [FIXED]
+<ul>
+<li>Temporary lock 20 phút khi guest chọn date range</li>
+<li>Thanh toán thành công → confirm block → lock released</li>
+<li>Conflict: RED overlay + toast "Ngày đã có booking"</li>
+<li>2 host edit calendar: optimistic lock với version field</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>3. Host Submit Listing → No Feedback Loop</strong> [FIXED]
+<ul>
+<li>Banner "Đang chờ duyệt trong 24h" trên dashboard</li>
+<li>Email/SMS notification khi admin action</li>
+<li>SLA: admin phải respond trong 24h</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>4. Chat Real-time</strong> [FIXED]
+<ul>
+<li>Polling 5s, đủ cho v1</li>
+<li>last_message_at để sort, message mới nhất lên trên</li>
+<li>"Đã gửi" indicator cho guest biết message đã được gửi</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>5. Host Decline sau Payment</strong> [FIXED]
+<ul>
+<li><strong>Decline CHỈ</strong> khi booking status = PENDING_PAYMENT (trước payment)</li>
+<li>Sau CONFIRMED: KHÔNG có decline → guest phải cancel theo policy</li>
+<li>Booking SLA: nếu host không respond trong 24h → auto cancel + refund 100%</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>6. Delete Listing có Booking Active</strong> [FIXED]
+<ul>
+<li><strong>Hard rule:</strong> KHÔNG cho delete listing có booking CONFIRMED/ACTIVE</li>
+<li>Chỉ allow delete khi tất cả booking = COMPLETED/CANCELLED/REFUNDED</li>
+<li>Soft delete: listing ẩn search nhưng guest đã book vẫn thấy trong history</li>
+<li>Reviews của deleted listing hiển thị dưới "[Homestay đã xóa]"</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>7. Suspend User có Booking</strong> [FIXED]
+<ul>
+<li>Admin KHÔNG xóa user → chỉ SUSPEND (soft delete)</li>
+<li>Suspended Guest: vẫn thấy booking history, KHÔNG tạo booking mới</li>
+<li>Suspended Host: listing ẩn search, booking cũ vẫn hoàn tất, KHÔNG nhận booking mới</li>
+<li>Settlement đã settle → giữ, pending → cancel</li>
+<li>Reactivate: Admin action → restore all + notify user</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>8. Settlement khi chưa có Bank Account</strong> [FIXED]
+<ul>
+<li>Host phải complete bank account trước khi nhận booking</li>
+<li>Settlement fail → Retry 3 lần trong 3 ngày → Notify host email/SMS</li>
+<li>Sau 7 ngày fail → Escalate to Admin</li>
+<li>Platform giữ tiền trong escrow, không dùng được</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>9. Guest không Review sau Checkout</strong> [FIXED]
+<ul>
+<li>Review KHÔNG bắt buộc → booking vẫn COMPLETED</li>
+<li>Reminder: Email + In-app notification sau checkout 24h</li>
+<li>Deadline: 14 ngày sau checkout, sau đó close review form</li>
+<li>Edit: allowed trong 48h sau submit</li>
+<li>Delete: guest có thể delete review (remove khỏi average)</li>
+<li>My Bookings: badge "Chưa đánh giá" cho booking đã complete</li>
+</ul>
+</div>
+
+<div class="danger-box">
+<strong>10. Checkout → Review UX Gap</strong> [FIXED]
+<ul>
+<li>Checkout trigger: Host click "Xác nhận checkout" HOẶC auto 12:00 + 30 phút grace</li>
+<li>Redirect: sau checkout → popup "Đánh giá ngay" → G9 Review Form</li>
+<li>Email: "Cảm ơn bạn đã ở [Homestay]. Viết đánh giá!"</li>
+</ul>
+</div>
+
+<!-- ========== ADDITIONAL RULES (from Challenger) ========== -->
+<h2>⚠️ HARD RULES (Business Logic — KHÔNG ĐƯỢC VI PHẠM)</h2>
+
+<table>
+<tr><th>Rule</th><th>Chi tiết</th></tr>
+<tr><td>Guest count</td><td>Lock tại thời điểm booking. Host verify tại check-in. Over-guest → refuse check-in (no refund) hoặc accept + charge ngoài platform</td></tr>
+<tr><td>Decline chỉ PENDING_PAYMENT</td><td>Sau CONFIRMED → guest cancel theo policy, không có decline</td></tr>
+<tr><td>Delete listing</td><td>Chỉ khi không có booking CONFIRMED/ACTIVE</td></tr>
+<tr><td>Admin suspend</td><td>Soft delete, không hard delete user</td></tr>
+<tr><td>Bank account required</td><td>Host phải có bank account trước khi nhận booking đầu tiên</td></tr>
+<tr><td>VNPay lock</td><td>20 phút (≥ timeout 15 phút)</td></tr>
+<tr><td>Review deadline</td><td>14 ngày sau checkout</td></tr>
+<tr><td>Admin SLA</td><td>24h respond cho listing review request</td></tr>
+</table>
+
+<!-- ========== SUMMARY ========== -->
+<h2>📊 TỔNG KẾT SPEC</h2>
+<div class="stat-grid">
+<div class="stat-card">
+<h4>Actors</h4>
+<div class="stat-num">3</div>
+Guest · Host · Admin
+</div>
+<div class="stat-card">
+<h4>Flows</h4>
+<div class="stat-num">12</div>
+Main user journeys
+</div>
+<div class="stat-card">
+<h4>Screens</h4>
+<div class="stat-num">24</div>
+Web + Mobile screens
+</div>
+<div class="stat-card">
+<h4>State Machines</h4>
+<div class="stat-num">4</div>
+Booking · Listing · Payment · Host App
+</div>
+</div>
+
+<div class="info-box">
+<strong>Stack recommendation for /kry-plan:</strong><br>
+• <strong>Web:</strong> Next.js 14 (App Router) + TailwindCSS + shadcn/ui<br>
+• <strong>Mobile:</strong> React Native (shared logic with web)<br>
+• <strong>Backend:</strong> Node.js + Express hoặc NestJS<br>
+• <strong>DB:</strong> PostgreSQL (Relational — booking consistency)<br>
+• <strong>Payment:</strong> VNPay sandbox → production<br>
+• <strong>Calendar:</strong> FullCalendar (Host) + date-range-picker (Guest)<br>
+• <strong>Chat:</strong> Polling (v1), WebSocket (v2)
+</div>
+
+<footer style="margin-top: 50px; padding: 20px; text-align: center; color: #999; border-top: 1px solid #eee;">
+<p>BookStay UX Spec v1.0 — Generated 2025-01-09 — Confidential</p>
+</footer>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#e91e63',
+    primaryTextColor: '#fff',
+    primaryBorderColor: '#9c27b0',
+    lineColor: '#9c27b0',
+    secondaryColor: '#f3e5f5',
+    tertiaryColor: '#fce4ec'
+  },
+  flowchart: { htmlLabels: true, curve: 'basis' },
+  stateDiagram: { htmlLabels: true }
+});
+</script>
+</body>
+</html>
