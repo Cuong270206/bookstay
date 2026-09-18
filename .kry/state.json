@@ -1,0 +1,21 @@
+{
+  "slug": "bookstay",
+  "name": "BookStay — Marketplace Booking Homestay",
+  "act": 1,
+  "next": "kry-ux",
+  "updated": "2025-01-09",
+  "repo": "Cuong270206/bookstay",
+  "market": "Hà Nội",
+  "commission": "15%",
+  "payment": "VNPay",
+  "features": [
+    "Đặt phòng",
+    "Calendar quản lý phòng",
+    "Thanh toán VNPay",
+    "Review & Rating",
+    "Chat khách-chủ",
+    "Thống kê host"
+  ],
+  "scale": "Growth (20-200 homestay)",
+  "notes": "Brief chốt ngày 0. Telegram cron pending — cần VPS host và bot token."
+}
