@@ -23,7 +23,7 @@ export default function AdminDashboardPage() {
     try {
       const res = await api.get('/admin/dashboard');
       setStats(res.data);
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 403) {
         toast.error('Bạn không có quyền truy cập trang này');
         router.push('/home');

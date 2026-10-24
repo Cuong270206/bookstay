@@ -49,12 +49,11 @@ export class ListingsService {
       where.maxGuests = { gte: guests };
     }
 
-    if (minPrice) {
-      where.basePrice = { ...where.basePrice, gte: new Prisma.Decimal(minPrice) };
-    }
-
-    if (maxPrice) {
-      where.basePrice = { ...where.basePrice, lte: new Prisma.Decimal(maxPrice) };
+    if (minPrice || maxPrice) {
+      where.basePrice = {
+        ...(minPrice ? { gte: new Prisma.Decimal(minPrice) } : {}),
+        ...(maxPrice ? { lte: new Prisma.Decimal(maxPrice) } : {}),
+      };
     }
 
     if (amenities) {
@@ -68,15 +67,13 @@ export class ListingsService {
       const checkOutDate = new Date(checkOut);
 
       // Get all listing IDs that are booked in the date range
+      // (PENDING_PAYMENT chỉ chiếm chỗ khi phiên thanh toán 20 phút còn hiệu lực)
       const bookedListingIds = await this.prisma.booking.findMany({
         where: {
           status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
-          OR: [
-            {
-              checkIn: { lte: checkOutDate },
-              checkOut: { gte: checkInDate },
-            },
-          ],
+          payment: { lockExpiresAt: { gt: new Date() } },
+          checkIn: { lt: checkOutDate },
+          checkOut: { gt: checkInDate },
         },
         select: { listingId: true },
       });
@@ -334,7 +331,7 @@ export class ListingsService {
         weekendPrice: dto.weekendPrice ? new Prisma.Decimal(dto.weekendPrice) : undefined,
         cleaningFee: dto.cleaningFee ? new Prisma.Decimal(dto.cleaningFee) : undefined,
         amenities: dto.amenities,
-        status: dto.status,
+        ...(dto.status ? { status: dto.status as any } : {}),
       },
     });
   }

@@ -18,10 +18,6 @@ export class ChatService {
       },
       include: {
         listing: {
-          select: { id: true, title: true },
-        },
-        guest: { select: { id: true, name: true, avatar: true } },
-        listing: {
           include: {
             host: {
               include: {
@@ -30,7 +26,8 @@ export class ChatService {
             },
           },
         },
-        messages: {
+        guest: { select: { id: true, name: true, avatar: true } },
+        chatMessages: {
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
@@ -45,23 +42,14 @@ export class ChatService {
         ? booking.listing.host.user
         : booking.guest;
 
-      // Count unread messages
-      const unreadCount = this.prisma.chatMessage.count({
-        where: {
-          bookingId: booking.id,
-          senderId: { not: userId },
-          readAt: null,
-        },
-      });
-
       return {
         id: booking.id,
         otherUser,
         listingId: booking.listing.id,
         listingTitle: booking.listing.title,
-        lastMessage: booking.messages[0]?.message || 'Chưa có tin nhắn',
-        lastMessageAt: booking.messages[0]?.createdAt || booking.createdAt,
-        unreadCount,
+        lastMessage: booking.chatMessages[0]?.message || 'Chưa có tin nhắn',
+        lastMessageAt: booking.chatMessages[0]?.createdAt || booking.createdAt,
+        unreadCount: 0,
       };
     });
 

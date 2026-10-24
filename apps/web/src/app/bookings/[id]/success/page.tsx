@@ -24,7 +24,7 @@ export default function BookingSuccessPage({ params }: { params: Promise<{ id: s
     try {
       const res = await api.get(`/bookings/${id}`);
       setBooking(res.data);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Không tìm thấy đơn đặt phòng');
     } finally {
       setIsLoading(false);

@@ -85,7 +85,7 @@ function BookingFormContent() {
     try {
       const res = await api.get(`/listings/${listingId}`);
       setListing(res.data);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Không tìm thấy homestay');
       router.push('/search');
     } finally {
@@ -104,7 +104,7 @@ function BookingFormContent() {
         ...data,
       });
 
-      const { bookingId, lockExpiresAt } = bookingRes.data;
+      const bookingId = bookingRes.data.bookingId || bookingRes.data.id;
 
       toast.success('Tạo đơn đặt phòng thành công!');
 

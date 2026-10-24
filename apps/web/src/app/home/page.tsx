@@ -35,7 +35,7 @@ export default function HomePage() {
         params: { limit: 8 },
       });
       setListings(res.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch listings:', error);
     } finally {
       setIsLoading(false);

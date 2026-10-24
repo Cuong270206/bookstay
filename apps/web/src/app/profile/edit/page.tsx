@@ -44,7 +44,7 @@ export default function EditProfilePage() {
       setValue('name', res.data.name);
       setValue('phone', res.data.phone || '');
       setValue('address', res.data.address || '');
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 401) {
         router.push('/login');
       }
@@ -57,7 +57,7 @@ export default function EditProfilePage() {
       await api.patch('/auth/profile', data);
       toast.success('Cập nhật hồ sơ thành công!');
       router.push('/profile');
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Không thể cập nhật hồ sơ');
     } finally {
       setIsSubmitting(false);

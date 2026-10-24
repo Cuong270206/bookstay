@@ -40,7 +40,7 @@ export default function HostBookingsPage() {
     try {
       const res = await api.get('/hosts/bookings');
       setBookings(res.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 403) {
         router.push('/host/onboarding');
       }
@@ -54,7 +54,7 @@ export default function HostBookingsPage() {
       await api.patch(`/bookings/${bookingId}/status`, { status: 'CONFIRMED' });
       toast.success('Đã xác nhận đặt phòng');
       fetchBookings();
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Không thể xác nhận');
     }
   };
@@ -94,7 +94,7 @@ export default function HostBookingsPage() {
           ].map((f) => (
             <Button
               key={f.key}
-              variant={filter === f.key ? 'default' : 'outline'}
+              variant={filter === f.key ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setFilter(f.key)}
             >

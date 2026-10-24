@@ -230,7 +230,7 @@ export class HostService {
     const listings = await this.prisma.listing.findMany({
       where: { hostId: profile.id },
       include: {
-        images: { where: { isCover: true }, take: 1 },
+        images: { orderBy: { order: 'asc' }, take: 1 },
         _count: { select: { bookings: true } },
       },
     });
@@ -243,7 +243,7 @@ export class HostService {
         listing: { hostId: profile.id },
       },
       include: {
-        listing: { select: { id: true, title: true, images: { where: { isCover: true }, take: 1 } } },
+        listing: { select: { id: true, title: true, images: { orderBy: { order: 'asc' }, take: 1 } } },
         guest: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -255,7 +255,7 @@ export class HostService {
     });
 
     const pendingBookings = await this.prisma.booking.count({
-      where: { listing: { hostId: profile.id }, status: 'PENDING' },
+      where: { listing: { hostId: profile.id }, status: 'PENDING_PAYMENT' },
     });
 
     // Get earnings
@@ -323,7 +323,7 @@ export class HostService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          images: { where: { isCover: true }, take: 1 },
+          images: { orderBy: { order: 'asc' }, take: 1 },
           _count: { select: { bookings: true } },
         },
       }),
@@ -360,7 +360,7 @@ export class HostService {
         orderBy: { createdAt: 'desc' },
         include: {
           listing: {
-            select: { id: true, title: true, images: { where: { isCover: true }, take: 1 } },
+            select: { id: true, title: true, images: { orderBy: { order: 'asc' }, take: 1 } },
           },
           guest: { select: { id: true, name: true, email: true, phone: true } },
         },

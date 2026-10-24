@@ -171,6 +171,53 @@ npm run db:seed      # Seed demo data
 - Platform takes 15% from host earnings
 - Monthly settlement to host bank account
 
+## Demo Accounts (sau khi `npm run db:seed`)
+
+| Vai trò | Email | Mật khẩu |
+|---------|-------|----------|
+| Admin | `admin@bookstay.vn` | `Admin@123456` |
+| Host | `host@bookstay.vn` | `Host@123456` |
+| Guest | `guest@bookstay.vn` | `Guest@123456` |
+
+> ⚠️ **Production**: đổi mật khẩu admin ngay lần đầu (hoặc set `ADMIN_EMAIL`/`ADMIN_PASSWORD` trước khi seed).
+
+## Production Deployment
+
+### Checklist trước khi launch
+
+- [ ] **JWT_SECRET**: chuỗi ngẫu nhiên ≥ 32 ký tự (`openssl rand -hex 32`) — API từ chối khởi động nếu dùng giá trị mặc định ở production
+- [ ] **.env không bao giờ commit** (đã có `.gitignore`; chỉ commit `.env.example`)
+- [ ] **VNPay production**: đăng ký merchant thật tại vnpayment.vn, set `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_URL=https://pay.vnpayment.vn/vpcpay.html` và đăng ký `VNPAY_RETURN_URL` (URL public của API) với VNPay
+- [ ] **Cloudinary**: tạo account, điền 3 biến `CLOUDINARY_*` (upload ảnh listing)
+- [ ] **CORS**: set `FRONTEND_URL` đúng domain production (nhiều domain phân cách bằng phẩy)
+- [ ] **Swagger**: mặc định tắt ở production, chỉ bật bằng `SWAGGER_ENABLED=true` khi cần
+- [ ] **Rate limit**: mặc định 100 req/phút/IP (cấu hình qua `THROTTLER_TTL`, `THROTTLER_LIMIT`); login giới hạn 10 lần/5 phút
+- [ ] Seed dữ liệu: `npm run db:seed` (chỉ tạo admin nếu chưa muốn dữ liệu demo)
+
+### Kiến trúc khuyến nghị
+
+```
+[Vercel]  apps/web    →  NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
+[Railway] services/api →  DATABASE_URL=<managed postgres>, REDIS_*, VNPAY_*, CLOUDINARY_*
+[Neon/Supabase] PostgreSQL 16
+```
+
+1. **Database**: tạo PostgreSQL managed (Neon / Supabase / Railway), chạy `npx prisma migrate deploy` (hoặc `db push`) + `npm run db:seed`
+2. **API**: deploy `services/api` (Node 20+), set toàn bộ env ở trên, health check `GET /api/v1/listings`
+3. **Web**: deploy `apps/web` lên Vercel, set `NEXT_PUBLIC_API_URL` và `NEXT_PUBLIC_SITE_URL` (dùng cho SEO/sitemap)
+4. **VNPay**: cập nhật return URL được phép ở portal VNPay trỏ về `https://api.yourdomain.com/api/v1/payments/vnpay-return`
+
+### Bảo mật đã tích hợp
+
+| Họng bảo mật | Trạng thái |
+|--------------|-----------|
+| Admin API chỉ cho role ADMIN (RolesGuard) | ✅ |
+| Chống overbooking: transaction SERIALIZABLE + khóa 20 phút tự hết hạn | ✅ |
+| VNPay: verify chữ ký HMAC đúng chuẩn + đối chiếu số tiền, idempotent | ✅ |
+| Helmet security headers | ✅ |
+| Rate limiting toàn cục + chặt ở auth | ✅ |
+| Validation DTO whitelist toàn cục | ✅ |
+
 ## Development Phases
 
 | Phase | Status |
@@ -182,6 +229,7 @@ npm run db:seed      # Seed demo data
 | Chat + Reviews | ✅ Done |
 | Admin Tools | ✅ Done |
 | Web Frontend | ✅ Done |
+| Production Hardening (security, build fixes, seed, docs) | ✅ Done |
 | Mobile App | ⏳ Pending |
 
 ---

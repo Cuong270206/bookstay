@@ -23,7 +23,7 @@ export default function ProfilePage() {
     try {
       const res = await api.get('/auth/me');
       setUser(res.data);
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 401) {
         router.push('/login');
       }

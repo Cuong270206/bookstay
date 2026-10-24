@@ -76,7 +76,7 @@ export default function ChatPage() {
     try {
       const res = await api.get('/chat/conversations');
       setConversations(res.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 401) {
         router.push('/login');
       }
@@ -92,7 +92,7 @@ export default function ChatPage() {
       if (!silent) {
         setIsLoading(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch messages:', error);
     }
   };
@@ -113,7 +113,7 @@ export default function ChatPage() {
 
       // Refresh conversations to update last message
       fetchConversations();
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Không thể gửi tin nhắn');
     } finally {
       setIsSending(false);

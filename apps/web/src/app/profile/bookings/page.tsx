@@ -42,7 +42,7 @@ export default function MyBookingsPage() {
     try {
       const res = await api.get('/bookings/my');
       setBookings(res.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 401) {
         router.push('/login');
       } else {
@@ -99,7 +99,7 @@ export default function MyBookingsPage() {
           {['all', 'upcoming', 'completed', 'cancelled'].map((f) => (
             <Button
               key={f}
-              variant={filter === f ? 'default' : 'outline'}
+              variant={filter === f ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setFilter(f)}
             >

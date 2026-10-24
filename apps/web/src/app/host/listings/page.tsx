@@ -23,7 +23,7 @@ export default function HostListingsPage() {
     try {
       const res = await api.get('/hosts/listings');
       setListings(res.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 403) {
         router.push('/host/onboarding');
       }
@@ -39,7 +39,7 @@ export default function HostListingsPage() {
       await api.delete(`/listings/${listingId}`);
       toast.success('Xóa homestay thành công');
       fetchListings();
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Không thể xóa homestay');
     }
   };

@@ -48,37 +48,6 @@ export class BookingsService {
       throw new BadRequestException('Tối đa 30 đêm');
     }
 
-    // Check availability
-    const conflict = await this.prisma.booking.findFirst({
-      where: {
-        listingId: dto.listingId,
-        status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
-        OR: [
-          {
-            checkIn: { lte: checkOut },
-            checkOut: { gte: checkIn },
-          },
-        ],
-      },
-    });
-
-    if (conflict) {
-      throw new BadRequestException('Ngày đã có người đặt, vui lòng chọn ngày khác');
-    }
-
-    // Check calendar blocks
-    const blockConflict = await this.prisma.calendarBlock.findFirst({
-      where: {
-        listingId: dto.listingId,
-        startDate: { lte: checkOut },
-        endDate: { gte: checkIn },
-      },
-    });
-
-    if (blockConflict) {
-      throw new BadRequestException('Ngày đã bị block, vui lòng chọn ngày khác');
-    }
-
     // Calculate pricing
     const isWeekend = this.isWeekend(checkIn) || this.isWeekend(checkOut);
     const nightlyRate = isWeekend && listing.weekendPrice
@@ -89,51 +58,99 @@ export class BookingsService {
     const platformFee = Math.round(subtotal * 0.15); // 15% commission
     const totalAmount = subtotal + cleaningFee;
 
-    // Create booking
-    const booking = await this.prisma.booking.create({
-      data: {
-        listingId: dto.listingId,
-        guestId,
-        checkIn,
-        checkOut,
-        nights,
-        guestName: dto.guestName,
-        guestPhone: dto.guestPhone,
-        guestEmail: dto.guestEmail,
-        guestCount: dto.guestCount,
-        specialRequests: dto.specialRequests,
-        nightlyRate: new Prisma.Decimal(nightlyRate),
-        cleaningFee: cleaningFee > 0 ? new Prisma.Decimal(cleaningFee) : null,
-        subtotal: new Prisma.Decimal(subtotal),
-        platformFee: new Prisma.Decimal(platformFee),
-        totalAmount: new Prisma.Decimal(totalAmount),
-        status: 'PENDING_PAYMENT',
-      },
-      include: {
-        listing: {
-          include: {
-            host: {
-              include: { user: { select: { id: true, name: true } } },
-            },
-          },
-        },
-      },
-    });
-
-    // Create payment record with 20-min lock
     const lockExpiresAt = new Date(Date.now() + 20 * 60 * 1000);
-    await this.prisma.payment.create({
-      data: {
-        bookingId: booking.id,
-        vnpAmount: totalAmount * 100, // VNPay uses cents
-        vnpOrderInfo: `BookStay-${booking.id}`,
-        status: 'CREATED',
-        lockExpiresAt,
-      },
-    });
+
+    // Transaction SERIALIZABLE: conflict check + create booking + payment,
+    // loại trừ tuyệt đối 2 request đặt trùng khoảng ngày cùng lúc
+    let booking;
+    try {
+      booking = await this.prisma.$transaction(
+        async (tx) => {
+          // Booking PENDING_PAYMENT chỉ chiếm chỗ khi phiên thanh toán (khóa 20 phút) còn hiệu lực
+          const conflict = await tx.booking.findFirst({
+            where: {
+              listingId: dto.listingId,
+              status: { in: ['CONFIRMED', 'PENDING_PAYMENT'] },
+              payment: { lockExpiresAt: { gt: new Date() } },
+              // overlap: cho phép nhận phòng ngay ngày khách khác trả phòng
+              checkIn: { lt: checkOut },
+              checkOut: { gt: checkIn },
+            },
+          });
+
+          if (conflict) {
+            throw new BadRequestException('Ngày đã có người đặt, vui lòng chọn ngày khác');
+          }
+
+          // Check calendar blocks
+          const blockConflict = await tx.calendarBlock.findFirst({
+            where: {
+              listingId: dto.listingId,
+              startDate: { lt: checkOut },
+              endDate: { gt: checkIn },
+            },
+          });
+
+          if (blockConflict) {
+            throw new BadRequestException('Ngày đã bị block, vui lòng chọn ngày khác');
+          }
+
+          const created = await tx.booking.create({
+            data: {
+              listingId: dto.listingId,
+              guestId,
+              checkIn,
+              checkOut,
+              nights,
+              guestName: dto.guestName,
+              guestPhone: dto.guestPhone,
+              guestEmail: dto.guestEmail,
+              guestCount: dto.guestCount,
+              specialRequests: dto.specialRequests,
+              nightlyRate: new Prisma.Decimal(nightlyRate),
+              cleaningFee: cleaningFee > 0 ? new Prisma.Decimal(cleaningFee) : null,
+              subtotal: new Prisma.Decimal(subtotal),
+              platformFee: new Prisma.Decimal(platformFee),
+              totalAmount: new Prisma.Decimal(totalAmount),
+              status: 'PENDING_PAYMENT',
+            },
+            include: {
+              listing: {
+                include: {
+                  host: {
+                    include: { user: { select: { id: true, name: true } } },
+                  },
+                },
+              },
+            },
+          });
+
+          // Create payment record with 20-min lock
+          await tx.payment.create({
+            data: {
+              bookingId: created.id,
+              vnpAmount: totalAmount * 100, // VNPay uses cents
+              vnpOrderInfo: `BookStay-${created.id}`,
+              status: 'CREATED',
+              lockExpiresAt,
+            },
+          });
+
+          return created;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (e: any) {
+      // P2034: serialization conflict (đặt trùng do race) → báo lỗi thân thiện
+      if (e?.code === 'P2034') {
+        throw new BadRequestException('Ngày vừa có người đặt, vui lòng chọn ngày khác');
+      }
+      throw e;
+    }
 
     return {
       ...booking,
+      bookingId: booking.id, // alias để tương thích client cũ
       lockExpiresAt,
     };
   }

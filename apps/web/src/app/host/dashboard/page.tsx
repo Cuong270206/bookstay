@@ -23,7 +23,7 @@ export default function HostDashboardPage() {
     try {
       const res = await api.get('/hosts/dashboard');
       setStats(res.data);
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 403) {
         toast.error('Bạn chưa đăng ký làm Host');
         router.push('/host/onboarding');

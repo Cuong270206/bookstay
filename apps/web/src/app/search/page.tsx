@@ -50,7 +50,7 @@ function SearchContent() {
       const res = await api.get('/listings', { params });
       setListings(res.data.data || []);
       setTotal(res.data.meta?.total || 0);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch listings:', error);
     } finally {
       setIsLoading(false);

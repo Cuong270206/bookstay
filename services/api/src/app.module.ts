@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -20,6 +22,13 @@ import { AdminModule } from './modules/admin/admin.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    // Rate limit toàn cục: mặc định 100 request/phút/IP (THROTTLER_TTL, THROTTLER_LIMIT)
+    ThrottlerModule.forRoot([
+      {
+        ttl: Number(process.env.THROTTLER_TTL || 60) * 1000,
+        limit: Number(process.env.THROTTER_LIMIT || 100),
+      },
+    ]),
     PrismaModule,
     CloudinaryModule,
     AuthModule,
@@ -33,6 +42,10 @@ import { AdminModule } from './modules/admin/admin.module';
     ChatModule,
     ReviewsModule,
     AdminModule,
+  ],
+  providers: [
+    // Áp dụng rate limit cho mọi route; route cụ thể có thể override bằng @SkipThrottle/@Throttle
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

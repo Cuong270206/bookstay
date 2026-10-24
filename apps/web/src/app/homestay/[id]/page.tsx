@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Star, Users, Bed, Bath, Wifi, Car, Coffee, Wind, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import api from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -35,7 +36,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
       const res = await api.get(`/listings/${id}`);
       setListing(res.data);
       setReviews(res.data.reviews || []);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Không tìm thấy homestay');
       router.push('/search');
     } finally {
